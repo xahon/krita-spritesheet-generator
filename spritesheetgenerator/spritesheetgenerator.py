@@ -238,8 +238,6 @@ class SpritesheetGenerator():
             layers[index].move(0, index * self.finalSpriteHeight)
 
     def _forceCloseDocument(self, document):
-        # Set "modified" to false to prevent a popup from showing when closing the document
-        document.setModified(False)
         document.close()
 
     def _exportToFile(self):
