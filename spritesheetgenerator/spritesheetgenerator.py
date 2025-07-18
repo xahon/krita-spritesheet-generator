@@ -8,9 +8,12 @@ class SpritesheetGenerator():
     def __init__(self):
         pass
 
-    def configure(self, exportFilePath, spritesheetType, ignoreEmptyFrames, targetSpriteWidth, targetSpriteHeight, spritePadding, filterStrategy):
+    def configure(self, exportFilePath, spritesheetType, autoCalculateSize, customRowCount, customColumnCount, ignoreEmptyFrames, targetSpriteWidth, targetSpriteHeight, spritePadding, filterStrategy):
         self.exportFilePath = exportFilePath
         self.spritesheetType = spritesheetType
+        self.autoCalculateSize = autoCalculateSize
+        self.customRowCount = max(customRowCount, 1)
+        self.customColumnCount = max(customColumnCount, 1)
         self.ignoreEmptyFrames = ignoreEmptyFrames
         self.targetSpriteWidth = targetSpriteWidth
         self.targetSpriteHeight = targetSpriteHeight
@@ -81,11 +84,18 @@ class SpritesheetGenerator():
         print(f"Padding applied. New document size is {self.temporaryDocument.width()} x {self.temporaryDocument.height()}")
 
     def _createSpritesheetDocumentFromFrames(self):
+        # If "Auto calculate size" is enabled then the max number of frames is the same as
+        # the total number of frames in the document. Otherwise, the max number of frames
+        # is determine by the manually defined number of rows and columns.
+        if self.autoCalculateSize:
+            maxFrameCount = (self.animationEndTime + 1) - self.animationStartTime
+        else:
+            maxFrameCount = self.customRowCount * self.customColumnCount
+
         if not self.ignoreEmptyFrames:
-            frameCount = (self.animationEndTime + 1) - self.animationStartTime
-            print(f"Adding {frameCount} frames to the spritesheet document")
+            print(f"Adding {maxFrameCount} frames to the spritesheet document")
             
-            size = self._getSpritesheetSize(frameCount)
+            size = self._getSpritesheetSize(maxFrameCount)
             self._createSpritesheetDocument(size.columns, size.rows)
 
             # Convert all frames to spritesheet layers
@@ -97,12 +107,21 @@ class SpritesheetGenerator():
             # Grab all of the keyframes
             keyframeTimes = set()
             topLevelLayers = self.temporaryDocument.topLevelNodes()
-            for layer in topLevelLayers:
+            maxFramesReached = False
+            currentLayer = 0
+
+            while currentLayer < len(topLevelLayers) and not maxFramesReached:
                 for time in range(self.animationStartTime, self.animationEndTime + 1, 1):
-                    if self._hasKeyframeAtTime(layer, time):
+                    if len(keyframeTimes) >= maxFrameCount:
+                        maxFramesReached = True
+                        break
+
+                    if self._hasKeyframeAtTime(topLevelLayers[currentLayer], time):
                         keyframeTimes.add(time)
                         print(f"Found keyframe at index: {time}")
-            
+
+                currentLayer += 1
+
             frameCount = len(keyframeTimes)
             print(f"Adding {frameCount} frames to the spritesheet document")
 
@@ -145,16 +164,19 @@ class SpritesheetGenerator():
 
         if frameCount == 0:
             return Size(1, 1)
+        elif self.spritesheetType == "Horizontal Strip":
+            return Size(frameCount, 1)
+        elif self.spritesheetType == "Vertical Strip":
+            return Size(1, frameCount)
+        elif self.autoCalculateSize == False:
+            return Size(self.customColumnCount, self.customRowCount)
         elif self.spritesheetType == "Rows":
             columnCount = math.ceil(math.sqrt(frameCount))
             return Size(columnCount, math.ceil(frameCount / columnCount))
         elif self.spritesheetType == "Columns":
             rowCount = math.ceil(math.sqrt(frameCount))
             return Size(math.ceil(frameCount / rowCount), rowCount)
-        elif self.spritesheetType == "Horizontal Strip":
-            return Size(frameCount, 1)
-        elif self.spritesheetType == "Vertical Strip":
-            return Size(1, frameCount)
+        
         else:
             raise Exception(f"Invalid spritesheet type provided: {self.spritesheetType}")
 

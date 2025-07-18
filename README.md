@@ -27,6 +27,10 @@ After installation, the **Spritesheet Generator** can be opened by navigating to
     * **Horizontal Strip:** Sprites will be organized into a single horizontal line.
     * **Vertical Strip:** Sprites will be organized into a single vertical line.
 
+* **Auto calculate size:** If enabled (default), will automatically determine the number of rows and columns needed in the spritesheet. Otherwise, rows and columns can be manually defined.
+* **Rows:** The number of rows in the spritesheet. This option is only available when **Auto calculate size** is disabled.
+* **Columns:** The number of columns in the spritesheet. This option is only available when **Auto calculate size** is disabled.
+
 * **Sprite dimensions:** Options related to the individual size of each sprite in the spritesheet.
     * **Width:** The desired width of each individual sprite. If this is different than the width of the current document, then the sprites will be resized before being placed in the spritesheet.
     * **Height:** The desired height of each individual sprite. If this is different than the height of the current document, then the sprites will be resized before being placed in the spritesheet.

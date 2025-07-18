@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QDialog, QLineEdit, QCheckBox,
                              QPushButton, QVBoxLayout, QHBoxLayout,
                              QLabel, QDialogButtonBox, QFormLayout,
                              QSpinBox, QComboBox, QGroupBox,
-                             QFrame, QFileDialog)
+                             QFrame, QFileDialog, QWidget, QLayout)
 
 class UISpritesheetGenerator(object):
 
@@ -31,6 +31,10 @@ class UISpritesheetGenerator(object):
         self.filePathBrowseButton.setToolTip("Opens this computer's native file browser to select the spritesheet's file path.")
         self.filePathBrowseButton.clicked.connect(self._onBrowseButtonPressed)
 
+        # Constant values for spritesheet layout fields
+        spriteCustomLayoutFieldWidth = 170
+        spriteCustomLayoutFieldMaxValue = 20
+
         # Constant values for sprite sizing fields
         spritePropertiesFieldWidth = 170
         spritePropertiesMaxValue = 9999
@@ -46,7 +50,35 @@ class UISpritesheetGenerator(object):
         self.spritesheetLayoutComboBox.addItem("Columns")
         self.spritesheetLayoutComboBox.addItem("Horizontal Strip")
         self.spritesheetLayoutComboBox.addItem("Vertical Strip")
+        self.spritesheetLayoutComboBox.currentIndexChanged.connect(self._onLayoutTypeChanged)
         self.spritesheetLayoutFormLayout = QFormLayout()
+
+        self.spritesheetCustomLayoutPropertiesLayoutWidget = QWidget()
+        self.spritesheetCustomLayoutPropertiesLayout = QFormLayout(self.spritesheetCustomLayoutPropertiesLayoutWidget)
+
+        # Toggle to automatically calculate the dimensions of the spritesheet
+        self.autoCalculateSize = QCheckBox("Auto calculate size")
+        self.autoCalculateSize.setToolTip("If enabled, will automatically determine the number of rows and columns needed in the spritesheet. Otherwise, rows and columns can be manually defined.")
+        self.autoCalculateSize.setChecked(True)
+        self.autoCalculateSize.stateChanged.connect(self._onAutoCalculateSizeChanged)
+
+        # Widget for controlling the number of rows when in Custom layout mode
+        self.spritesheetRowCountField = QSpinBox()
+        self.spritesheetRowCountField.setToolTip("The number of rows in the spritesheet.")
+        self.spritesheetRowCountField.setMinimum(1)
+        self.spritesheetRowCountField.setMaximum(spriteCustomLayoutFieldMaxValue)
+        self.spritesheetRowCountField.setMaximumWidth(spriteCustomLayoutFieldWidth)
+        self.spritesheetRowCountField.setAlignment(Qt.AlignRight)
+
+        # Widget for controlling the number of columns when in Custom layout mode
+        self.spritesheetColumnCountField = QSpinBox()
+        self.spritesheetColumnCountField.setToolTip("The number of columns in the spritesheet.")
+        self.spritesheetColumnCountField.setMinimum(1)
+        self.spritesheetColumnCountField.setMaximum(spriteCustomLayoutFieldMaxValue)
+        self.spritesheetColumnCountField.setMaximumWidth(spriteCustomLayoutFieldWidth)
+        self.spritesheetColumnCountField.setAlignment(Qt.AlignRight)
+
+        self._onAutoCalculateSizeChanged()
 
         # Containers for the sprite properties UI
         self.spritePropertiesContainer = QGroupBox("Sprite properties")
@@ -116,6 +148,15 @@ class UISpritesheetGenerator(object):
 
          # Add the widget for selecting the spritesheet type
         self.spritesheetLayoutFormLayout.addRow("Spritesheet layout:", self.spritesheetLayoutComboBox)
+
+        # Add widget for automatically calculating spritesheet size
+        self.spritesheetLayoutFormLayout.addRow(self.autoCalculateSize)
+       
+        # Add widgets for the manually definining spritesheet dimensions
+        self.spritesheetCustomLayoutPropertiesLayout.addRow("Rows:", self.spritesheetRowCountField)
+        self.spritesheetCustomLayoutPropertiesLayout.addRow("Columns:", self.spritesheetColumnCountField)
+
+        self.spritesheetLayoutFormLayout.addRow(self.spritesheetCustomLayoutPropertiesLayoutWidget)
         self.mainLayout.addLayout(self.spritesheetLayoutFormLayout)
 
         # Add a divider
@@ -149,6 +190,9 @@ class UISpritesheetGenerator(object):
         self.spritesheetGenerator.configure(
             self.filePathField.text(),
             self.spritesheetLayoutComboBox.currentText(),
+            self.autoCalculateSize.isChecked() or self.autoCalculateSize.isHidden(),
+            self.spritesheetRowCountField.value(),
+            self.spritesheetColumnCountField.value(),
             self.ignoreEmptyFramesCheckBox.isChecked(),
             self.spriteWidthField.value(),
             self.spriteHeightField.value(),
@@ -169,3 +213,21 @@ class UISpritesheetGenerator(object):
         if fileDialog.exec():
             fileNames = fileDialog.selectedFiles()
             self.filePathField.setText(fileNames[0])
+
+    def _onLayoutTypeChanged(self):
+        layoutType = self.spritesheetLayoutComboBox.currentText()
+
+        # Only display the "Auto calculate size" widget when the layout type is "Rows" or "Columns"
+        if layoutType == "Rows" or layoutType == "Columns":
+            self.autoCalculateSize.show()
+        else:
+            self.autoCalculateSize.hide()
+
+
+    def _onAutoCalculateSizeChanged(self):
+        if self.autoCalculateSize.isChecked():
+            # Hide widgets for manually setting spritesheet dimensions
+            self.spritesheetCustomLayoutPropertiesLayoutWidget.hide()
+        else:
+            # Show widgets for manually setting spritesheet dimensions
+            self.spritesheetCustomLayoutPropertiesLayoutWidget.show()
