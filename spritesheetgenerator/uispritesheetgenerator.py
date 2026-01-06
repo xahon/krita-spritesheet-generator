@@ -132,10 +132,10 @@ class UISpritesheetGenerator(object):
         # If the document doesn't have a file path set then
         # the user's home directory will be used. 
         targetDirectory = None
-        if self.activeDocument != None and self.activeDocument.fileName() != None:
-            targetDirectory = Path(self.activeDocument.fileName()).parents[0]
-        else:
+        if not self.activeDocument or not self.activeDocument.fileName():
             targetDirectory = Path.home()
+        else:
+            targetDirectory = Path(self.activeDocument.fileName()).parents[0]
 
         # Set the file name to "spritesheet.png" by default
         self.filePathField.setText(str(targetDirectory.joinpath("Spritesheet.png")))
