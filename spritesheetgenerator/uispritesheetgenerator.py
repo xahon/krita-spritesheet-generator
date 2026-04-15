@@ -1,3 +1,5 @@
+from PyQt5.QtGui import QPixmap, QIcon
+
 import krita
 import os
 from pathlib import Path
@@ -8,7 +10,7 @@ from PyQt5.QtWidgets import (QDialog, QLineEdit, QCheckBox,
                              QPushButton, QVBoxLayout, QHBoxLayout,
                              QLabel, QDialogButtonBox, QFormLayout,
                              QSpinBox, QComboBox, QGroupBox,
-                             QFrame, QFileDialog, QWidget)
+                             QFrame, QFileDialog, QWidget, QListWidget, QListWidgetItem)
 
 class UISpritesheetGenerator(object):
 
@@ -122,6 +124,15 @@ class UISpritesheetGenerator(object):
         self.filterStrategyComboBox.setMaximumWidth(spritePropertiesFieldWidth)
         self.filterStrategyComboBox.addItem("Auto")
         self.filterStrategyComboBox.addItems(self.krita.filterStrategies())
+
+        self.layerExclusionsListLabel = QLabel("Layers to exclude:")
+        self.layerExclusionsList = QListWidget()
+        if self.activeDocument != None:
+            for layer in self.activeDocument.topLevelNodes():
+                item = QListWidgetItem(layer.name())
+                item.setIcon(QIcon(QPixmap.fromImage(layer.thumbnail(64, 64))))
+                item.setCheckState(Qt.Unchecked)
+                self.layerExclusionsList.insertItem(0, item)
         
         # Toggle to include/exclude empty frames
         self.ignoreEmptyFramesCheckBox = QCheckBox("Ignore empty frames")
@@ -185,6 +196,10 @@ class UISpritesheetGenerator(object):
         # Add the toggle for including/excluding empty frames
         self.mainLayout.addWidget(self.ignoreEmptyFramesCheckBox)
 
+        self.mainLayout.addWidget(divider)
+        self.mainLayout.addWidget(self.layerExclusionsListLabel)
+        self.mainLayout.addWidget(self.layerExclusionsList)
+
         # Add the "OK" and "Cancel" buttons
         self.mainLayout.addWidget(self.dialogButtonBox)
         
@@ -197,6 +212,12 @@ class UISpritesheetGenerator(object):
     def _onConfirmButtonPressed(self):
         self.mainDialog.setEnabled(False)
 
+        exclusionLayers = []
+        for row in range(self.layerExclusionsList.count()):
+            item = self.layerExclusionsList.item(row)
+            if item.checkState() == Qt.Checked:
+                exclusionLayers.append(item.text())
+
         self.spritesheetGenerator.configure(
             self.filePathField.text(),
             self.spritesheetLayoutComboBox.currentText(),
@@ -207,7 +228,9 @@ class UISpritesheetGenerator(object):
             self.spriteWidthField.value(),
             self.spriteHeightField.value(),
             self.spritePaddingField.value(),
-            self.filterStrategyComboBox.currentText())
+            self.filterStrategyComboBox.currentText(),
+            exclusionLayers
+        )
         
         self.spritesheetGenerator.export()
         self.mainDialog.close()
